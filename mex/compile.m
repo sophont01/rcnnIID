@@ -1,0 +1,3 @@
+mex -I"/media/saurabh/String/SOFTWARES/ANN/ann-1.1.2+doc/include" -L"/media/saurabh/String/SOFTWARES/ANN/ann-1.1.2+doc/lib" -l"ANN" -I"/home/saurabh/WORK/CODES/intrinsic_texture-master/mex/opencv210_x64/include/opencv/" -L"/usr/lib/x86_64-linux-gnu/" -l"opencv_core" getGridLLEMatrix.cpp mexBase.cpp LLE.cpp
+mex -v -I"/usr/local/include" -L"/usr/local/lib" -l"opencv_core" -I"/usr/include/ANN" -L"/usr/lib" -l"ann" getGridLLEMatrixNormal_RCNN_tol.cpp mexBase.cpp LLE_fStack_tol.cpp
+mex -v -I"/usr/local/include" -L"/usr/local/lib" -l"opencv_core" -I"/usr/include/ANN" -L"/usr/lib" -l"ann" getGridLLEMatrixNormal_RCNN_global.cpp mexBase.cpp LLE_fStack_tol.cpp

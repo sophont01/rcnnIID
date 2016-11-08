@@ -1,0 +1,8 @@
+DATA/**
+*.mat
+*.png
+ORIG/**
+RESULTS/**
+tmp/**
+libs/**
+
