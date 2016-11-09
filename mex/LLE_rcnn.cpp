@@ -159,7 +159,7 @@ void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K, 
 	output W: float [N][k] - k neighbor weight for N point
 	output neighbors: int [N][k] - k neighbor index for N point
 */
-void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K = 12)
+void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, float tol, int K = 12)
 {
 	if(X.rows != N || X.cols != D) {
 		printf("Failded. Invalid size X.\n");
@@ -213,16 +213,16 @@ void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K =
 	annClose();
 	*/
 	// % STEP2: SOLVE FOR RECONSTRUCTION WEIGHTS
-	float tol;
+	//float tol;
 	printf("--> Solving for reconstruction weights.\n");
 	if(K > D) {
 		printf("---->[note: K>D; regularization will be used]\n");
-		tol = 1e-3; // % regularlizer in case constrained fits are ill conditioned
+		tol = 1; // % regularlizer in case constrained fits are ill conditioned
 	} else {
 		tol = 0;
 	}
 //	tol = 1e-4; // HARD SETTING TOL VALUE _SS_
-	tol = 1;
+	//tol = 1;
 	cv::Mat1f z(K, D);
 	for(int n=0; n<N; n++) {
 		z.setTo(0);

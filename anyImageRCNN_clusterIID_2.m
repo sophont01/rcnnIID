@@ -2,6 +2,8 @@ function anyImageRCNN_clusterIID_2(imPath, initImgPath, resDir)
 
 fprintf('======= Processing %s =======\n',imPath);
 [imDir,imName,~]=fileparts(imPath);
+imDir_parts = strsplit(imDir,'/');
+ 
 I = im2uint8(imread(imPath));
 
 if nargin<2
@@ -14,8 +16,10 @@ else
     I_init = [];
 end
 if isempty(resDir)
-    resDir = pwd;
+    resDir = fullfile(pwd, 'RESULTS', imDir_parts{end});
 end
+
+tol = 0.001 ; % LLE TOLERANCE
 
 %% Local Grids
 
@@ -46,7 +50,7 @@ feat_L = getRCNNFeatures(I, boxes);
 cd(codeRootDir);
 fMap_L = reshape(feat_L{1},[floor(size(I,1)/g_size), floor(size(I,2)/g_size), size(feat_L{1},2)]);
 fMap_L = double(fMap_L);
-nNeighbors = getGridLLEMatrix_RCNN(fMap_L, hn, wn, 10, size(fMap_L,3), g_size);
+nNeighbors = getGridLLEMatrix_RCNN(fMap_L, hn, wn, 10, size(fMap_L,3), g_size, tol);
 
 %% Global proposals
 
@@ -101,9 +105,9 @@ end
 r = (r - ones(size(r)))';
 c = (c - ones(size(c)))';
 proposals = proposals-ones(size(proposals)); % C++ indexing for mex
-tol = 1 ;
-nNeighbors2_s = getGridLLEMatrixFeatures_RCNN_global(fMap_G, r, c, hn, wn, 10, tol);
-% nNeighbors2_s = getRPLLEMatrix_RCNN(fMap_G, r, c, hn, wn, 10, tol);
+% nNeighbors2_s = getGridLLEMatrixFeatures_RCNN_global(fMap_G, r, c, hn, wn, 10, tol);
+% nNeighbors2_s = getRpLLEMatrix_RCNN(fMap_G, r, c, hn, wn, 10, tol);
+nNeighbors2_s = getRpLLEMatrix_RCNN(fMap_G, r, c, hn, wn, 2, tol);
 
 %% IID
 
@@ -121,10 +125,10 @@ if ~exist('sig_n','var')
 end
 
 C = getChrom(S);
-thres = 0.001;
-nthres = 0.001;
-wr = ones(hn, wn);
-ws = 1.0;
+% thres = 0.001;
+% nthres = 0.001;
+% wr = ones(hn, wn);
+% ws = 1.0;
 
 % [consVec, thresMap] = getConstraintsMatrix(C, wr, ws, thres, 0, S, nthres, S);  <-- ????
 % Compute propagation weights (matting Laplacian, surface normal)
@@ -148,7 +152,7 @@ mask2 = spdiags(mk, 0, N, N); % Subsampling mask for non-local LLE
 
 % A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 1 * mask2 * (spI - LLENORMAL) + 1 * L_S + 0.025 * WSC;
 % A = 4 * WRC + 0.0005 * mask * (spI - LLEGRID) + 0.0005 * mask2 * (spI - LLEGLOBAL) + 1 * L_S + 0.025 * WSC;
-A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 0.001 * mask2 * (spI - LLEGLOBAL) + 1 * L_S + 0.25 * WSC;
+A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 0.1 * mask2 * (spI - LLERP) + 1 * L_S + 0.025 * WSC;
 
 b = 4 * consVecCont_s;
 disp('Optimizing the system...');

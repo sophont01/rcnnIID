@@ -11,4 +11,4 @@ void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K, 
 void LLE(cv::Mat1f &X, cv::Mat1f &vMap, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K, int wSize, int width, int height, float varThres);
 void LLE3(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, int K);
 
-//void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, float tol, int K);
+void LLE(cv::Mat1f &X, cv::Mat1f &W, cv::Mat1i &neighbors, int N, int D, float tol, int K);
