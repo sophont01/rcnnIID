@@ -1,4 +1,5 @@
-function anyImageRCNN_clusterIID_2(imPath, initImgPath, resDir)
+function anyImageRCNN_clusterIID_2(imPath, resDir, sig_c, sig_i)
+% function anyImageRCNN_clusterIID_2(imPath, initImgPath, resDir)
 
 fprintf('======= Processing %s =======\n',imPath);
 [imDir,imName,~]=fileparts(imPath);
@@ -7,20 +8,25 @@ imDir_parts = strsplit(imDir,'/');
 I = im2uint8(imread(imPath));
 
 if nargin<2
-    initImgPath = [];
-    resDir = [];
-end
-if ~isempty(initImgPath)
-    I_init = im2double(imread(initImgPath));
-else
-    I_init = [];
-end
-if isempty(resDir)
+%     initImgPath = [];
     resDir = fullfile(pwd, 'RESULTS', imDir_parts{end});
+    sig_c = 0.0001;
+    sig_i = 10; %     sig_i = 0.8;
+    sig_n = 0.5;
 end
+% if ~isempty(initImgPath)
+%     I_init = im2double(imread(initImgPath));
+% else
+%     I_init = [];
+% end
+% if isempty(resDir)
+%     resDir = fullfile(pwd, 'RESULTS', imDir_parts{end});
+% end
 
-tol = 0.001 ; % LLE TOLERANCE
-
+% tol = 0.001 ; % LLE TOLERANCE
+tol = 0 ; % LLE TOLERANCE
+knnL = 10; % kNN for LLE
+knnG = 2; % kNN for LLE
 %% Local Grids
 
 g_size = 30;
@@ -28,9 +34,9 @@ o_size = 30;
 hn = g_size*floor(size(I,1)/g_size);
 wn = g_size*floor(size(I,2)/g_size);
 I = imresize(I,[ hn wn ]);
-if ~isempty(I_init)
-    I_init = imresize(I_init,[ hn wn ]);
-end
+% if ~isempty(I_init)
+%     I_init = imresize(I_init,[ hn wn ]);
+% end
 S = RollingGuidanceFilter(im2double(I), 3, 0.1, 4);
 N = hn*wn;
 
@@ -50,7 +56,7 @@ feat_L = getRCNNFeatures(I, boxes);
 cd(codeRootDir);
 fMap_L = reshape(feat_L{1},[floor(size(I,1)/g_size), floor(size(I,2)/g_size), size(feat_L{1},2)]);
 fMap_L = double(fMap_L);
-nNeighbors = getGridLLEMatrix_RCNN(fMap_L, hn, wn, 10, size(fMap_L,3), g_size, tol);
+nNeighbors = getGridLLEMatrix_RCNN(fMap_L, hn, wn, knnL, size(fMap_L,3), g_size, tol);
 
 %% Global proposals
 
@@ -107,22 +113,22 @@ c = (c - ones(size(c)))';
 proposals = proposals-ones(size(proposals)); % C++ indexing for mex
 % nNeighbors2_s = getGridLLEMatrixFeatures_RCNN_global(fMap_G, r, c, hn, wn, 10, tol);
 % nNeighbors2_s = getRpLLEMatrix_RCNN(fMap_G, r, c, hn, wn, 10, tol);
-nNeighbors2_s = getRpLLEMatrix_RCNN(fMap_G, r, c, hn, wn, 2, tol);
+nNeighbors2_s = getRpLLEMatrix_RCNN(fMap_G, r, c, hn, wn, knnG, tol);
 
 %% IID
 
 I = im2double(I);
 S = im2double(S);
-
-if ~exist('sig_c','var')
-    sig_c = 0.0001;
-end
-if ~exist('sig_i','var')
-    sig_i = 0.8;
-end
-if ~exist('sig_n','var')
-    sig_n = 0.5;
-end
+% 
+% if ~exist('sig_c','var')
+%     sig_c = 0.0001;
+% end
+% if ~exist('sig_i','var')
+%     sig_i = 0.8;
+% end
+% if ~exist('sig_n','var')
+%     sig_n = 0.5;
+% end
 
 C = getChrom(S);
 % thres = 0.001;
@@ -152,7 +158,8 @@ mask2 = spdiags(mk, 0, N, N); % Subsampling mask for non-local LLE
 
 % A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 1 * mask2 * (spI - LLENORMAL) + 1 * L_S + 0.025 * WSC;
 % A = 4 * WRC + 0.0005 * mask * (spI - LLEGRID) + 0.0005 * mask2 * (spI - LLEGLOBAL) + 1 * L_S + 0.025 * WSC;
-A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 0.1 * mask2 * (spI - LLERP) + 1 * L_S + 0.025 * WSC;
+% A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 0.1 * mask2 * (spI - LLERP) + 1 * L_S + 0.025 * WSC;
+A = 4 * WRC + 1 * mask * (spI - LLEGRID) + 1 * mask2 * (spI - LLERP) + 1 * L_S + 0.025 * WSC;
 
 b = 4 * consVecCont_s;
 disp('Optimizing the system...');
@@ -162,12 +169,12 @@ disp('Optimizing the system...');
 % newS = pcg(A, b, 1e-3, 5000, [], [], []);
 % newS = pcg(A, b, 1e-3, 5000, [], [], pcg_init);
 
-if ~isempty(I_init)
-    pcg_init = reshape(log(2*I_init), [hn*wn 1]);
-    newS = pcg(A, b, 1e-3, 5000, [], [], pcg_init);
-else
+% if ~isempty(I_init)
+%     pcg_init = reshape(log(2*I_init), [hn*wn 1]);
+%     newS = pcg(A, b, 1e-3, 5000, [], [], pcg_init);
+% else
     newS = pcg(A, b, 1e-3, 5000, [], [], []);
-end
+% end
 
 
 res_s = reshape(exp(newS), [hn wn])/2;
@@ -177,8 +184,8 @@ if ~exist(resDir,'dir');
     mkdir(resDir);
 end
 
-imwrite([I res_r repmat(res_s,[1 1 3])], fullfile(resDir,[imName '_res.png']));
+imwrite([I res_r repmat(res_s, [1 1 3])], fullfile(resDir,[imName '_res.png']));
 
 resPath = fullfile(resDir,[imName '.mat']);
-save(resPath,'res_s','res_r');
+save(resPath,'res_s','res_r','boxes','feat_L','proposals','feat_G');
 end
