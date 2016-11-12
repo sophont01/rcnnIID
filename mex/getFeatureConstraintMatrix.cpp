@@ -53,9 +53,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				{
 					dist = dist + cp[f]*cq[f];	
 				}
-				dist = 2.0 * (1.0 - dist);
+				//dist = 2.0 * (1.0 - dist);
+				//dist = 2.0 * (1.0 - dist);
 
-				float weight = (exp(-dist*dist/(sig_c*sig_c)));
+				float weight = (exp(-(1-dist*dist)/(sig_c*sig_c)));
 				if(k == 2)
 					mxGetPr(plhs[0])[p] = weight;
 
